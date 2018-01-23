@@ -19,6 +19,21 @@ using NXOpenUI;
             return originPoint;
         }
 
+        public Point Point3DPolar(Part workPart, Point ptOrigin,double radius, double angle)
+        {
+            Vector3d myVector = new Vector3d();
+            myVector.X = radius*Math.Cos(angle*Math.PI/180);
+            myVector.Y = radius * Math.Sin(angle * Math.PI / 180);
+            myVector.Z = 0;
+
+            Offset myOffset = workPart.Offsets.CreateOffset(ptOrigin.Coordinates, myVector, SmartObject.UpdateOption.WithinModeling);
+
+            Point outPoint = workPart.Points.CreatePoint(myOffset, ptOrigin, SmartObject.UpdateOption.WithinModeling);
+            outPoint.SetVisibility(SmartObject.VisibilityOption.Visible);
+
+            return outPoint;
+        }
+
         public DatumAxis DatumAxisCreation(Part workPart, Point first, Point second)
         {
             //Tworzenie "buildera dla osi Y".
@@ -43,8 +58,16 @@ using NXOpenUI;
             return datumAxis;
         }
 
+        public Line UnAssLines(Part workPart, Point first, Point last)
+        {
+            Line line = workPart.Curves.CreateLine(first, last);
+            line.SetVisibility(SmartObject.VisibilityOption.Visible);
 
-        #region
+            return line;
+        }
+
+
+        #region Csys Creation
         public NXOpen.Features.DatumCsys CsysCreation(Part workPart,Point pointOrigin,Point pointAxis1,Point pointAxis2)
         {
             NXOpen.Features.Feature nullFeatures_Feature = null;
