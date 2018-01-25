@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
+using System.Windows.Forms;
 using NXOpen;
 using NXOpen.UF;
 using NXOpenUI;
@@ -49,6 +51,21 @@ using NXOpenUI;
             Point3d outPoint = new Point3d(point2.Coordinates.X, point2.Coordinates.Y, point2.Coordinates.Z);
 
             return outPoint;
+        }
+
+        public Point3d Point3dByIntersection(Part workPart, Line line1, Line line2)
+        {
+            Unit nullUnit = null;
+            Expression expression = workPart.Expressions.CreateSystemExpressionWithUnits("50", nullUnit);
+            Scalar scalar4 = workPart.Scalars.CreateScalarExpression(expression, NXOpen.Scalar.DimensionalityType.None, NXOpen.SmartObject.UpdateOption.WithinModeling);
+            Point point1 = workPart.Points.CreatePoint(line1, scalar4, NXOpen.SmartObject.UpdateOption.WithinModeling);
+            Point point2 = workPart.Points.CreatePoint(line2, scalar4, NXOpen.SmartObject.UpdateOption.WithinModeling);
+
+            Point pointInter = workPart.Points.CreatePoint(line1, line2, point1, point2, NXOpen.SmartObject.UpdateOption.WithinModeling);
+
+            Point3d outPointInter = new Point3d(pointInter.Coordinates.X, pointInter.Coordinates.Y, pointInter.Coordinates.Z);
+            
+            return outPointInter;
         }
 
         public DatumAxis DatumAxisCreation(Part workPart, Point3d first3d, Point3d second3d)
@@ -222,6 +239,23 @@ using NXOpenUI;
 
         }
 
+        public Axis AxisCreation(Part workPart,Point3d point3d,Vector3d vector3d)
+        {
+                        Direction direction1 = workPart.Directions.CreateDirection(point3d, vector3d, NXOpen.SmartObject.UpdateOption.WithinModeling);
+                        Point nullPoint = null;
+                        Axis axis = workPart.Axes.CreateAxis(nullPoint, direction1, SmartObject.UpdateOption.WithinModeling);
+            return axis;
+        }
+
+        public Axis AxisCreation(Part workPart,Point3d point3d,Line line)
+        {
+                        Sense sense=new Sense();
+                        Direction direction1 = workPart.Directions.CreateDirection(line,sense, NXOpen.SmartObject.UpdateOption.WithinModeling);
+                        Point nullPoint = null;
+                        Axis axis = workPart.Axes.CreateAxis(nullPoint, direction1, SmartObject.UpdateOption.WithinModeling);
+            return axis;
+        }
+
 
         #region Csys Creation
         public NXOpen.Features.DatumCsys CsysCreation(Part workPart,Point3d pointOrigin3d,Point3d pointAxis13d,Point3d pointAxis23d)
@@ -292,6 +326,128 @@ using NXOpenUI;
         }
         #endregion
 
+        public Body RotationBodyAboutAxis(Part workPart,Body body,Axis axisOfRotation,double angleOfRotation)
+        {
+            System.Globalization.CultureInfo USculture = new System.Globalization.CultureInfo("en-US");
+
+            NXOpen.Features.MoveObject nullFeatures_MoveObject = null;
+            NXOpen.Features.MoveObjectBuilder moveObjectBuilder11;
+            moveObjectBuilder11 = workPart.BaseFeatures.CreateMoveObjectBuilder(nullFeatures_MoveObject);
+            NXOpen.GeometricUtilities.OrientXpressBuilder orientXpressBuilder2;
+            orientXpressBuilder2 = moveObjectBuilder11.TransformMotion.OrientXpress;
+            orientXpressBuilder2.AxisOption = NXOpen.GeometricUtilities.OrientXpressBuilder.Axis.Passive;
+            orientXpressBuilder2.PlaneOption = NXOpen.GeometricUtilities.OrientXpressBuilder.Plane.Passive;
+            Point3d manipulatororigin1;
+            manipulatororigin1 = moveObjectBuilder11.TransformMotion.ManipulatorOrigin;
+            Matrix3x3 manipulatormatrix1;
+            manipulatormatrix1 = moveObjectBuilder11.TransformMotion.ManipulatorMatrix;
+            moveObjectBuilder11.TransformMotion.Option = NXOpen.GeometricUtilities.ModlMotion.Options.Angle;
+            bool added1 = moveObjectBuilder11.ObjectToMoveObject.Add(body);
+
+            moveObjectBuilder11.TransformMotion.AngularAxis = axisOfRotation;
+            moveObjectBuilder11.TransformMotion.DistanceValue.RightHandSide = "10";
+            moveObjectBuilder11.TransformMotion.Angle.RightHandSide = angleOfRotation.ToString(USculture);
+
+            NXObject movedpinion1;
+            movedpinion1 = moveObjectBuilder11.Commit();
+            NXObject[] outBodies = moveObjectBuilder11.GetCommittedObjects();
+            moveObjectBuilder11.Destroy();
+
+            Body bodyOut = (Body)outBodies[0];
+
+            return bodyOut;
+        }
+
+        public Body MoveBodyAlongVector(Part workPart, Body body, Direction direction, double distance)
+        {
+            System.Globalization.CultureInfo USculture = new System.Globalization.CultureInfo("en-US");
+            
+            NXOpen.Features.MoveObject nullFeatures_MoveObject = null;
+            NXOpen.Features.MoveObjectBuilder moveObjectBuilder1;
+            moveObjectBuilder1 = workPart.BaseFeatures.CreateMoveObjectBuilder(nullFeatures_MoveObject);
+
+            moveObjectBuilder1.TransformMotion.DistanceAngle.OrientXpress.AxisOption = NXOpen.GeometricUtilities.OrientXpressBuilder.Axis.Passive;
+
+            moveObjectBuilder1.TransformMotion.DistanceAngle.OrientXpress.PlaneOption = NXOpen.GeometricUtilities.OrientXpressBuilder.Plane.Passive;
+
+            moveObjectBuilder1.TransformMotion.OrientXpress.AxisOption = NXOpen.GeometricUtilities.OrientXpressBuilder.Axis.Passive;
+
+            moveObjectBuilder1.TransformMotion.OrientXpress.PlaneOption = NXOpen.GeometricUtilities.OrientXpressBuilder.Plane.Passive;
+
+            Point3d manipulatororigin1;
+            manipulatororigin1 = moveObjectBuilder1.TransformMotion.ManipulatorOrigin;
+
+            Matrix3x3 manipulatormatrix1;
+            manipulatormatrix1 = moveObjectBuilder1.TransformMotion.ManipulatorMatrix;
+
+            moveObjectBuilder1.TransformMotion.Option = NXOpen.GeometricUtilities.ModlMotion.Options.Distance;
+
+            moveObjectBuilder1.TransformMotion.DistanceVector = direction;
+
+            bool added1 = moveObjectBuilder1.ObjectToMoveObject.Add(body);
+
+            moveObjectBuilder1.TransformMotion.DistanceValue.RightHandSide = distance.ToString(USculture);
+
+            NXObject nXObject1;
+            nXObject1 = moveObjectBuilder1.Commit();
+
+            NXObject[] objects1;
+            objects1 = moveObjectBuilder1.GetCommittedObjects();
+
+            Body bodyOut = (Body)objects1[0];
+
+            return bodyOut;
+        }
+
+        public Body Revolve(Part workPart,Axis axisRotation,Sketch sketch, Line lineSketch,Point3d point3dSketch,double degStart,double degEnd)
+        {
+                        //RevolveBulidier
+                        NXOpen.Features.Feature nullFeature1 = null;
+                        NXOpen.Features.RevolveBuilder revolveBuilder1 = workPart.Features.CreateRevolveBuilder(nullFeature1);
+
+                        //Section
+                        Section section1 = workPart.Sections.CreateSection(0.02, 0.02, 0.02);
+
+                        revolveBuilder1.Section = section1;
+                        revolveBuilder1.Axis = axisRotation;
+                        revolveBuilder1.Tolerance = 0.02;
+                        section1.DistanceTolerance = 0.02;
+                        section1.ChainingTolerance = 0.02;
+
+                        //Line assignment
+                         NXOpen.Features.Feature[] features1 = new NXOpen.Features.Feature[1];
+                         NXOpen.Features.SketchFeature sketchFeature1 = (NXOpen.Features.SketchFeature)sketch.Feature;
+                         features1[0] = sketchFeature1;
+
+                         CurveFeatureRule curveFeatureRule1;
+                         curveFeatureRule1 = workPart.ScRuleFactory.CreateRuleCurveFeature(features1);
+
+                         section1.AllowSelfIntersection(true);
+                         
+                         SelectionIntentRule[] rules1 = new SelectionIntentRule[1];
+                         rules1[0] = curveFeatureRule1;
+                         NXObject nullNXObject = null;
+                         
+                         //Selection
+                         section1.AddToSection(rules1, lineSketch, nullNXObject, nullNXObject, point3dSketch, NXOpen.Section.Mode.Create, false);
+                         
+                         revolveBuilder1.Axis = axisRotation;
+                         
+                         //Sheet Body selection
+                         revolveBuilder1.FeatureOptions.BodyType = NXOpen.GeometricUtilities.FeatureOptions.BodyStyle.Sheet;
+                         revolveBuilder1.Section = section1;
+                         
+                         //Ustawienia
+                         revolveBuilder1.Limits.StartExtend.Value.RightHandSide = degStart.ToString();
+                         revolveBuilder1.Limits.EndExtend.Value.RightHandSide = degEnd.ToString();
+                         revolveBuilder1.ParentFeatureInternal = false;
+
+                         NXObject feature_revolve1 = revolveBuilder1.CommitFeature();
+
+                         NXOpen.Features.BodyFeature bodyFeature1 = (NXOpen.Features.BodyFeature)feature_revolve1;
+                         Body[] body = bodyFeature1.GetBodies();
+                         return body[0];
+        }
 
     }
 
